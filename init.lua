@@ -98,6 +98,13 @@ vim.g.have_nerd_font = false
 -- NOTE: You can change these options as you wish!
 --  For more options, you can see `:help option-list`
 
+-- Use spaces instead of tabs
+vim.opt.expandtab = true
+-- Number of spaces to use for each step of (auto)indent
+vim.opt.shiftwidth = 2
+-- Number of spaces that a <Tab> in the file counts for
+vim.opt.tabstop = 2
+
 -- Make line numbers default
 vim.opt.number = true
 -- You can also add relative line numbers, to help with jumping.
