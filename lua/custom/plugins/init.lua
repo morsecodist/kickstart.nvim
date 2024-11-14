@@ -13,6 +13,7 @@ return {
       filetypes = {
         markdown = true,
         help = true,
+        'typescript-language-server',
       },
     },
   },

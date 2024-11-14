@@ -667,7 +667,7 @@ require('lazy').setup({
         gopls = {},
         pyright = {},
         rust_analyzer = {},
-        tsserver = {},
+        ['typescript-language-server'] = {},
         terraformls = {},
         svelte = {},
         texlab = {},
