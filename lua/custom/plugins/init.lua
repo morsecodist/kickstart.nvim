@@ -4,32 +4,38 @@
 -- See the kickstart.nvim README for more information
 return {
   {
-    'zbirenbaum/copilot.lua',
+    'github/copilot.vim',
     cmd = 'Copilot',
-    build = ':Copilot auth',
-    opts = {
-      suggestion = { enabled = false },
-      panel = { enabled = false },
-      filetypes = {
-        markdown = true,
-        help = true,
-        'typescript-language-server',
-      },
-    },
-  },
-
-  {
-    'hrsh7th/nvim-cmp',
-    dependencies = {
-      {
-        -- TODO: use the official repo once https://github.com/zbirenbaum/copilot-cmp/pull/108 is merged
-        'morsecodist/copilot-cmp',
-        dependencies = 'copilot.lua',
-        opts = {},
-        config = function(_, opts)
-          local copilot_cmp = require 'copilot_cmp'
-          copilot_cmp.setup(opts)
+    event = 'BufWinEnter',
+    init = function()
+      vim.g.copilot_no_maps = true
+    end,
+    config = function()
+      -- Block the normal Copilot suggestions
+      vim.api.nvim_create_augroup('github_copilot', { clear = true })
+      vim.api.nvim_create_autocmd({ 'FileType', 'BufUnload' }, {
+        group = 'github_copilot',
+        callback = function(args)
+          vim.fn['copilot#On' .. args.event]()
         end,
+      })
+      vim.fn['copilot#OnFileType']()
+    end,
+  },
+  {
+    'saghen/blink.cmp',
+    dependencies = { 'fang2hou/blink-copilot' },
+    opts = {
+      sources = {
+        default = { 'copilot' },
+        providers = {
+          copilot = {
+            name = 'copilot',
+            module = 'blink-copilot',
+            score_offset = 100,
+            async = true,
+          },
+        },
       },
     },
   },
