@@ -616,6 +616,7 @@ require('lazy').setup({
         terraformls = {},
         svelte = {},
         texlab = {},
+        tailwindcss = {},
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
         --    https://github.com/pmizio/typescript-tools.nvim
@@ -664,7 +665,8 @@ require('lazy').setup({
       -- You can press `g?` for help in this menu.
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
-        -- You can add other tools here that you want Mason to install
+        'stylua', -- Used to format Lua code
+        'tailwindcss-language-server',
       })
 
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -794,7 +796,7 @@ require('lazy').setup({
       },
 
       sources = {
-        default = { 'copilot', 'lsp', 'path', 'snippets', 'lazydev' },
+        default = { 'lsp', 'path', 'snippets', 'lazydev' },
         providers = {
           lazydev = { module = 'lazydev.integrations.blink', score_offset = 100 },
         },

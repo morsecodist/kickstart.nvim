@@ -8,39 +8,8 @@
 return {
   {
     'github/copilot.vim',
-    cmd = 'Copilot',
-    event = 'BufWinEnter',
-    init = function()
-      vim.g.copilot_no_maps = true
-    end,
-    config = function()
-      -- Block the normal Copilot suggestions
-      vim.api.nvim_create_augroup('github_copilot', { clear = true })
-      vim.api.nvim_create_autocmd({ 'FileType', 'BufUnload' }, {
-        group = 'github_copilot',
-        callback = function(args)
-          vim.fn['copilot#On' .. args.event]()
-        end,
-      })
-      vim.fn['copilot#OnFileType']()
-    end,
-  },
-  {
-    'saghen/blink.cmp',
-    dependencies = { 'fang2hou/blink-copilot' },
-    opts = {
-      sources = {
-        default = { 'copilot' },
-        providers = {
-          copilot = {
-            name = 'copilot',
-            module = 'blink-copilot',
-            score_offset = 100,
-            async = true,
-          },
-        },
-      },
-    },
+    build = ':Copilot setup',
+    event = 'InsertEnter',
   },
 
   {
@@ -48,5 +17,18 @@ return {
     dependencies = {
       'nvim-lua/plenary.nvim',
     },
+  },
+  {
+    'NvChad/nvim-colorizer.lua',
+    config = function()
+      require('colorizer').setup {
+        filetypes = { 'css', 'scss', 'html', 'javascript', 'typescript', 'javascriptreact', 'typescriptreact', 'svelte' },
+        user_default_options = {
+          tailwind = true,
+          css = true,
+          mode = 'background', -- or 'foreground' if you prefer
+        },
+      }
+    end,
   },
 }
