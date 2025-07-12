@@ -31,4 +31,23 @@ return {
       }
     end,
   },
+  {
+    -- To work on your system this requires a hack in './init.lua'
+    -- See the comment in that file starting with "HACK: this is needed to make codecompanion work" for a detailed explanation
+    'olimorris/codecompanion.nvim',
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+      'nvim-treesitter/nvim-treesitter',
+    },
+    opts = {
+      strategies = {
+        chat = {
+          adapter = 'anthropic',
+        },
+        inline = { adapter = 'anthropic' },
+      },
+      -- Set debug logging
+      log_level = 'DEBUG',
+    },
+  },
 }

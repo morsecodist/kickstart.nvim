@@ -84,6 +84,28 @@ I hope you enjoy your Neovim journey,
 P.S. You can delete this when you're done too. It's your config now! :)
 --]]
 
+-- HACK: this is needed to make codecompanion work
+-- There was a bug with codecompanion where certain tools would fail to run with the error:
+-- "E5108: Error executing lua"
+-- Strangely, this only happened when codecompanion was installed normally, using a local copy
+-- worked. After extensive debugging it appears this happens because these tools are cached with luac
+-- and based on where nvim state is stored and the naming conventions, the names of these
+-- cached files can be longer than the maximum file name length (143 characters).
+-- Note that the issue is with file names, not paths because the full path ends up encoded in the file name.
+-- (i.e. '%2fhome%2ftodd%2f.local%2fshare%2fnvim%2flazy%2fcodecompanion.nvim%2flua%2fcodecompanion%2fstrategies%2fchat%2fagents%2ftools%2fgrep_search.luac')
+-- The reason the maximum file name length is so short is because the your system is using ecryptfs which
+-- reduces the maximum file name length to 143 characters.
+-- To make it work we can completely disable the loader, which will prevent the luac caching entirely.
+-- This is a small performance hit, but it is worth it to make codecompanion work.
+-- Completely disable vim.loader to prevent luac caching filename length issues
+vim.loader.disable()
+-- Override vim.loader.enable to prevent it from being re-enabled
+local original_enable = vim.loader.enable
+vim.loader.enable = function()
+  -- Do nothing - keep it disabled
+end
+-- End of fix
+
 -- Set <space> as the leader key
 -- See `:help mapleader`
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
@@ -972,6 +994,9 @@ require('lazy').setup({
     },
   },
 })
+
+-- Load custom keymaps
+require('custom.keymaps')
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
