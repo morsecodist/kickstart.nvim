@@ -3,6 +3,25 @@
 --
 -- See the kickstart.nvim README for more information
 
+-- Register .stratus filetype
+vim.filetype.add {
+  extension = {
+    stratus = 'stratus',
+  },
+}
+
+-- Configure stratus LSP
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'stratus',
+  callback = function()
+    vim.lsp.start {
+      name = 'stratus',
+      cmd = { 'node', '/home/todd/curavit/stratus/config-lib/dist/server.js' },
+      root_dir = vim.fs.dirname(vim.fs.find({ '.git', 'package.json' }, { upward = true })[1]),
+    }
+  end,
+})
+
 ---@module 'lazy'
 ---@type LazySpec
 return {

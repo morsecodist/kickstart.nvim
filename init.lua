@@ -689,6 +689,7 @@ require('lazy').setup({
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
         'tailwindcss-language-server',
+        'prettierd', -- Used to format JS/TS code
       })
 
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -716,6 +717,34 @@ require('lazy').setup({
     ---@type conform.setupOpts
     opts = {
       notify_on_error = false,
+      formatters = {
+        prettierd = {
+          cwd = function(self, ctx)
+            return require('conform.util').root_file {
+              '.prettierrc',
+              '.prettierrc.json',
+              '.prettierrc.js',
+              '.prettierrc.yaml',
+              'prettier.config.js',
+              'prettier.config.cjs',
+              'package.json',
+            }(self, ctx)
+          end,
+        },
+        prettier = {
+          cwd = function(self, ctx)
+            return require('conform.util').root_file {
+              '.prettierrc',
+              '.prettierrc.json',
+              '.prettierrc.js',
+              '.prettierrc.yaml',
+              'prettier.config.js',
+              'prettier.config.cjs',
+              'package.json',
+            }(self, ctx)
+          end,
+        },
+      },
       format_on_save = function(bufnr)
         -- Disable "format_on_save lsp_fallback" for languages that don't
         -- have a well standardized coding style. You can add additional
