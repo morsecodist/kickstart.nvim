@@ -84,6 +84,28 @@ I hope you enjoy your Neovim journey,
 P.S. You can delete this when you're done too. It's your config now! :)
 --]]
 
+-- HACK: this is needed to make codecompanion work
+-- There was a bug with codecompanion where certain tools would fail to run with the error:
+-- "E5108: Error executing lua"
+-- Strangely, this only happened when codecompanion was installed normally, using a local copy
+-- worked. After extensive debugging it appears this happens because these tools are cached with luac
+-- and based on where nvim state is stored and the naming conventions, the names of these
+-- cached files can be longer than the maximum file name length (143 characters).
+-- Note that the issue is with file names, not paths because the full path ends up encoded in the file name.
+-- (i.e. '%2fhome%2ftodd%2f.local%2fshare%2fnvim%2flazy%2fcodecompanion.nvim%2flua%2fcodecompanion%2fstrategies%2fchat%2fagents%2ftools%2fgrep_search.luac')
+-- The reason the maximum file name length is so short is because the your system is using ecryptfs which
+-- reduces the maximum file name length to 143 characters.
+-- To make it work we can completely disable the loader, which will prevent the luac caching entirely.
+-- This is a small performance hit, but it is worth it to make codecompanion work.
+-- Completely disable vim.loader to prevent luac caching filename length issues
+vim.loader.disable()
+-- Override vim.loader.enable to prevent it from being re-enabled
+local original_enable = vim.loader.enable
+vim.loader.enable = function()
+  -- Do nothing - keep it disabled
+end
+-- End of fix
+
 -- Set <space> as the leader key
 -- See `:help mapleader`
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
@@ -98,11 +120,17 @@ vim.g.have_nerd_font = false
 -- NOTE: You can change these options as you wish!
 --  For more options, you can see `:help option-list`
 
+-- Use spaces instead of tabs
+vim.opt.expandtab = true
+-- Number of spaces to use for each step of (auto)indent
+vim.opt.shiftwidth = 2
+-- Number of spaces that a <Tab> in the file counts for
+vim.opt.tabstop = 2
+
 -- Make line numbers default
 vim.o.number = true
--- You can also add relative line numbers, to help with jumping.
---  Experiment for yourself to see if you like it!
--- vim.o.relativenumber = true
+-- Enable relative line numbers
+vim.o.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.o.mouse = 'a'
@@ -114,7 +142,9 @@ vim.o.showmode = false
 --  Schedule the setting after `UiEnter` because it can increase startup-time.
 --  Remove this option if you want your OS clipboard to remain independent.
 --  See `:help 'clipboard'`
-vim.schedule(function() vim.o.clipboard = 'unnamedplus' end)
+--  vim.schedule(function()
+--    vim.o.clipboard = 'unnamedplus'
+--  end)
 
 -- Enable break indent
 vim.o.breakindent = true
@@ -601,9 +631,14 @@ require('lazy').setup({
       ---@type table<string, vim.lsp.Config>
       local servers = {
         -- clangd = {},
-        -- gopls = {},
-        -- pyright = {},
-        -- rust_analyzer = {},
+        gopls = {},
+        pyright = {},
+        rust_analyzer = {},
+        ['typescript-language-server'] = {},
+        terraformls = {},
+        svelte = {},
+        texlab = {},
+        tailwindcss = {},
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
         --    https://github.com/pmizio/typescript-tools.nvim
@@ -652,7 +687,9 @@ require('lazy').setup({
       -- You can press `g?` for help in this menu.
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
-        -- You can add other tools here that you want Mason to install
+        'stylua', -- Used to format Lua code
+        'tailwindcss-language-server',
+        'prettierd', -- Used to format JS/TS code
       })
 
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -680,6 +717,34 @@ require('lazy').setup({
     ---@type conform.setupOpts
     opts = {
       notify_on_error = false,
+      formatters = {
+        prettierd = {
+          cwd = function(self, ctx)
+            return require('conform.util').root_file {
+              '.prettierrc',
+              '.prettierrc.json',
+              '.prettierrc.js',
+              '.prettierrc.yaml',
+              'prettier.config.js',
+              'prettier.config.cjs',
+              'package.json',
+            }(self, ctx)
+          end,
+        },
+        prettier = {
+          cwd = function(self, ctx)
+            return require('conform.util').root_file {
+              '.prettierrc',
+              '.prettierrc.json',
+              '.prettierrc.js',
+              '.prettierrc.yaml',
+              'prettier.config.js',
+              'prettier.config.cjs',
+              'package.json',
+            }(self, ctx)
+          end,
+        },
+      },
       format_on_save = function(bufnr)
         -- Disable "format_on_save lsp_fallback" for languages that don't
         -- have a well standardized coding style. You can add additional
@@ -696,11 +761,14 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
+        terraform = { 'terraform_fmt' },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
+        javascript = { 'prettierd', 'prettier', stop_after_first = true },
+        typescript = { 'prettierd', 'prettier', stop_after_first = true },
+        typescriptreact = { 'prettierd', 'prettier', stop_after_first = true },
       },
     },
   },
@@ -779,7 +847,10 @@ require('lazy').setup({
       },
 
       sources = {
-        default = { 'lsp', 'path', 'snippets' },
+        default = { 'lsp', 'path', 'snippets', 'lazydev' },
+        providers = {
+          lazydev = { module = 'lazydev.integrations.blink', score_offset = 100 },
+        },
       },
 
       snippets = { preset = 'luasnip' },
@@ -874,7 +945,12 @@ require('lazy').setup({
     branch = 'main',
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter-intro`
     config = function()
-      local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
+      local parsers = {
+        'bash', 'c', 'cpp', 'diff', 'go', 'html', 'javascript',
+        'lua', 'luadoc', 'markdown', 'markdown_inline', 'python',
+        'query', 'rust', 'svelte', 'terraform', 'tsx', 'typescript',
+        'vim', 'vimdoc',
+      }
       require('nvim-treesitter').install(parsers)
       vim.api.nvim_create_autocmd('FileType', {
         callback = function(args)
@@ -909,7 +985,7 @@ require('lazy').setup({
   --  Here are some example plugins that I've included in the Kickstart repository.
   --  Uncomment any of the lines below to enable them (you will need to restart nvim).
   --
-  -- require 'kickstart.plugins.debug',
+  require 'kickstart.plugins.debug',
   -- require 'kickstart.plugins.indent_line',
   -- require 'kickstart.plugins.lint',
   -- require 'kickstart.plugins.autopairs',
@@ -920,7 +996,7 @@ require('lazy').setup({
   --    This is the easiest way to modularize your config.
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
   --
   -- For additional information with loading, sourcing and examples see `:help lazy.nvim-🔌-plugin-spec`
   -- Or use telescope!
@@ -947,6 +1023,9 @@ require('lazy').setup({
     },
   },
 })
+
+-- Load custom keymaps
+require('custom.keymaps')
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et

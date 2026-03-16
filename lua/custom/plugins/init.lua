@@ -3,6 +3,70 @@
 --
 -- See the kickstart.nvim README for more information
 
+-- Register .stratus filetype
+vim.filetype.add {
+  extension = {
+    stratus = 'stratus',
+  },
+}
+
+-- Configure stratus LSP
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'stratus',
+  callback = function()
+    vim.lsp.start {
+      name = 'stratus',
+      cmd = { 'node', '/home/todd/curavit/stratus/config-lib/dist/server.js' },
+      root_dir = vim.fs.dirname(vim.fs.find({ '.git', 'package.json' }, { upward = true })[1]),
+    }
+  end,
+})
+
 ---@module 'lazy'
 ---@type LazySpec
-return {}
+return {
+  {
+    'github/copilot.vim',
+    build = ':Copilot setup',
+    event = 'InsertEnter',
+  },
+
+  {
+    'nvim-pack/nvim-spectre',
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+    },
+  },
+  {
+    'NvChad/nvim-colorizer.lua',
+    config = function()
+      require('colorizer').setup {
+        filetypes = { 'css', 'scss', 'html', 'javascript', 'typescript', 'javascriptreact', 'typescriptreact', 'svelte' },
+        user_default_options = {
+          tailwind = true,
+          css = true,
+          mode = 'background', -- or 'foreground' if you prefer
+        },
+      }
+    end,
+  },
+  {
+    -- To work on your system this requires a hack in './init.lua'
+    -- See the comment in that file starting with "HACK: this is needed to make codecompanion work" for a detailed explanation
+    'olimorris/codecompanion.nvim',
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+      'nvim-treesitter/nvim-treesitter',
+    },
+    opts = {
+      strategies = {
+        chat = {
+          adapter = 'anthropic',
+        },
+        inline = { adapter = 'anthropic' },
+      },
+      -- Set debug logging
+      log_level = 'DEBUG',
+    },
+  },
+}
